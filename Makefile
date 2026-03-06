@@ -1,4 +1,4 @@
-.PHONY: help install test lint build up down restart logs migrate db-shell
+.PHONY: help install test lint build up down restart logs migrate
 
 help: ## Show this help message
 	@echo "Usage: make [target]"
@@ -49,9 +49,6 @@ migrate-create: ## Create a new migration (use MSG="description")
 
 migrate-local: ## Run migrations locally
 	alembic upgrade head
-
-db-shell: ## Open PostgreSQL shell
-	docker-compose exec postgres psql -U pasteuser -d paste_db
 
 clean: ## Clean up build artifacts
 	rm -rf build dist *.egg-info

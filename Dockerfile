@@ -9,19 +9,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
 # Create virtual environment
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy project files
 WORKDIR /build
-COPY pyproject.toml ./
+COPY pyproject.toml README.md ./
 
 # Install dependencies
 RUN pip install --upgrade pip && \
@@ -35,11 +29,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:$PATH"
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
-
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 
@@ -52,8 +41,8 @@ WORKDIR /app
 # Copy application code
 COPY --chown=appuser:appuser . .
 
-# Create storage directory
-RUN mkdir -p storage && chown -R appuser:appuser storage
+# Create storage and data directories
+RUN mkdir -p storage data && chown -R appuser:appuser storage data
 
 # Switch to non-root user
 USER appuser

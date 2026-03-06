@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     )
 
     # Database
-    database_url: str = "postgresql+asyncpg://user:password@localhost/paste_db"
+    database_url: str = "sqlite+aiosqlite:///./paste.db"
 
     # Storage
     storage_path: Path = Path("./storage")

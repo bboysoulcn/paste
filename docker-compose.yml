@@ -1,32 +1,14 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:16-alpine
-    container_name: paste-db
-    environment:
-      POSTGRES_USER: pasteuser
-      POSTGRES_PASSWORD: pastepass
-      POSTGRES_DB: paste_db
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pasteuser"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # Paste
+  # Paste Service
   paste:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: paste
     environment:
-      DATABASE_URL: postgresql+asyncpg://pasteuser:pastepass@postgres:5432/paste_db
+      DATABASE_URL: sqlite+aiosqlite:///./paste.db
       STORAGE_PATH: /app/storage
       EXPIRATION_HOURS: 24
       ID_LENGTH: 6
@@ -35,11 +17,9 @@ services:
       PORT: 8000
     volumes:
       - paste_storage:/app/storage
+      - paste_db:/app/data
     ports:
       - "8000:8000"
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 30s
@@ -48,5 +28,5 @@ services:
       start_period: 5s
 
 volumes:
-  postgres_data:
   paste_storage:
+  paste_db:

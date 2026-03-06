@@ -9,14 +9,14 @@ A zero-friction paste service built with FastAPI, inspired by [p.est.im](https:/
 - 🖼️ Image upload with automatic dimension extraction
 - ⏰ Auto-expiring pastes (default 24 hours)
 - 🔒 Secure deletion with unique tokens
-- 🗄️ PostgreSQL metadata + local file storage
+- 🗄️ SQLite database + local file storage
 
 ## Quick Start
 
 ### Option 1: Using Docker Compose (Recommended)
 
 ```bash
-# Start all services (PostgreSQL + Paste service)
+# Start service
 docker-compose up -d
 
 # Run database migrations
@@ -32,10 +32,6 @@ docker-compose logs -f paste
 # Install dependencies
 pip install -e .
 
-# Configure environment
-cp .env.example .env
-# Edit .env with your database settings
-
 # Run migrations
 alembic upgrade head
 
@@ -49,11 +45,11 @@ uvicorn app.main:app --reload
 # Pull the image
 docker pull ghcr.io/<username>/paste:latest
 
-# Run with PostgreSQL
+# Run with volume for persistence
 docker run -d \
   --name paste \
   -p 8000:8000 \
-  -e DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db \
+  -v $(pwd)/data:/app/data \
   ghcr.io/<username>/paste:latest
 ```
 

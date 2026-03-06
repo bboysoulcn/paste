@@ -4,10 +4,10 @@
 
 ### 使用 Docker Compose（推荐）
 
-Docker Compose 会自动启动 PostgreSQL 数据库和 Paste 服务：
+Docker Compose 会自动启动 Paste 服务（使用 SQLite 数据库）：
 
 ```bash
-# 启动所有服务
+# 启动服务
 docker-compose up -d
 
 # 查看日志
@@ -35,12 +35,12 @@ docker-compose exec paste alembic upgrade head
 # 构建镜像
 docker build -t paste .
 
-# 运行容器（需要先启动 PostgreSQL）
+# 运行容器
 docker run -d \
   --name paste \
   -p 8000:8000 \
-  -e DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db \
   -v $(pwd)/storage:/app/storage \
+  -v $(pwd)/data:/app/data \
   paste
 ```
 
@@ -63,9 +63,9 @@ docker run -d \
 ghcr.io/<username>/paste:<tag>
 
 # 示例
-ghcr.io/bboysoul/paste:main
-ghcr.io/bboysoul/paste:v1.0.0
-ghcr.io/bboysoul/paste:sha-abc123
+ghcr.io/bboysoulcn/paste:main
+ghcr.io/bboysoulcn/paste:v1.0.0
+ghcr.io/bboysoulcn/paste:sha-abc123
 ```
 
 ### 多架构支持
@@ -87,7 +87,8 @@ docker pull ghcr.io/<username>/paste:main
 docker run -d \
   --name paste \
   -p 8000:8000 \
-  -e DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db \
+  -v $(pwd)/storage:/app/storage \
+  -v $(pwd)/data:/app/data \
   ghcr.io/<username>/paste:main
 ```
 
@@ -104,12 +105,12 @@ services:
   paste:
     image: ghcr.io/<username>/paste:latest
     environment:
-      DATABASE_URL: ${DATABASE_URL}
       STORAGE_PATH: /app/storage
       EXPIRATION_HOURS: 24
       MAX_FILE_SIZE: 10485760
     volumes:
       - ./storage:/app/storage
+      - ./data:/app/data
     ports:
       - "8000:8000"
     restart: unless-stopped
@@ -145,15 +146,11 @@ spec:
         image: ghcr.io/<username>/paste:latest
         ports:
         - containerPort: 8000
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: paste-secrets
-              key: database-url
         volumeMounts:
         - name: storage
           mountPath: /app/storage
+        - name: data
+          mountPath: /app/data
         resources:
           requests:
             memory: "128Mi"
@@ -177,6 +174,9 @@ spec:
       - name: storage
         persistentVolumeClaim:
           claimName: paste-storage
+      - name: data
+        persistentVolumeClaim:
+          claimName: paste-data
 ---
 apiVersion: v1
 kind: Service
@@ -201,13 +201,22 @@ kubectl apply -f deployment.yaml
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `DATABASE_URL` | - | PostgreSQL 连接字符串（必需） |
+| `DATABASE_URL` | `sqlite+aiosqlite:///./paste.db` | SQLite 数据库路径 |
 | `STORAGE_PATH` | `./storage` | 文件存储路径 |
 | `EXPIRATION_HOURS` | `24` | Paste 过期时间（小时） |
 | `ID_LENGTH` | `6` | Paste ID 长度 |
 | `MAX_FILE_SIZE` | `10485760` | 最大文件大小（字节，默认 10MB） |
 | `HOST` | `0.0.0.0` | 监听地址 |
 | `PORT` | `8000` | 监听端口 |
+
+## 数据持久化
+
+应用使用 SQLite 数据库，需要持久化以下目录：
+
+- `/app/data` - 数据库文件（paste.db）
+- `/app/storage` - 上传的文件内容
+
+使用 Docker 或 Kubernetes 时，确保将这些目录挂载到持久化存储。
 
 ## 健康检查
 
@@ -227,3 +236,4 @@ curl http://localhost:8000/health
 2. **非 root 用户**：提高安全性
 3. **健康检查**：自动重启不健康的容器
 4. **多架构支持**：支持 amd64 和 arm64 平台
+5. **SQLite 数据库**：轻量级，无需额外数据库服务
