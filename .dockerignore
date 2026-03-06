@@ -65,6 +65,6 @@ Thumbs.db
 
 # Documentation
 CLAUDE.md
-README.md
+DEPLOYMENT.md
 *.md
-!pyproject.toml
+!README.md
